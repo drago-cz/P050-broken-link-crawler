@@ -18,13 +18,13 @@ session.headers.update({
 pages_data = {}  # klíč = URL stránky, hodnota = { "status_code": ..., "links": [...] }
 links_data = {}  # klíč = URL odkazu, hodnota = { "is_absolute": ..., "opens_new_window": ..., "scheme": ..., "nofollow": ..., "external": ..., "status_code": ..., "pages": set() }
 
+# Ověří, zda URL obsahuje schéma (http/https) a doménu.
 def is_valid_url(url):
-    """Ověří, zda URL obsahuje schéma (http/https) a doménu."""
     parsed = urlparse(url)
     return parsed.scheme in ("http", "https") and bool(parsed.netloc)
 
+# Načte obsah stránky – pomocí GET požadavku, stahujeme pouze HTML dokument.
 def get_response(url):
-    """Načte obsah stránky – pomocí GET požadavku, stahujeme pouze HTML dokument."""
     try:
         r = session.get(url, timeout=10)
         return r
@@ -32,17 +32,18 @@ def get_response(url):
         print(f"Chyba při stahování {url}: {e}")
         return None
 
+# Pomocí HEAD požadavku zjistí status kód odkazu.
+# Nechceme redirekty, potřebujeme vědět že je odkaz správně
 def get_head_response(url):
-    """Pomocí HEAD požadavku zjistí status kód odkazu."""
     try:
-        r = session.head(url, timeout=10, allow_redirects=True)
+        r = session.head(url, timeout=10, allow_redirects=False)
         return r
     except Exception as e:
         print(f"Chyba při HEAD požadavku na {url}: {e}")
         return None
 
+# Uloží průběžný stav do JSON souboru.
 def save_progress(visited_pages, pages_data, links_data, filename="progress.json"):
-    """Uloží průběžný stav do JSON souboru."""
     # Protože nelze přímo serializovat množinu, převedeme ji na list
     links_data_serializable = {}
     for link, data in links_data.items():
@@ -57,20 +58,20 @@ def save_progress(visited_pages, pages_data, links_data, filename="progress.json
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(progress, f, ensure_ascii=False, indent=2)
     print(f"Průběžný stav uložen do {filename}")
-
-def process_links(soup, current_url, base_domain):
-    """
-    Ze zpracované stránky získá všechny odkazy a ke každému uloží:
-      - zda je odkaz zapsán jako absolutní či relativní,
-      - zda se má otevírat v novém okně (target="_blank"),
-      - použitý protokol (http/https),
-      - zda obsahuje atribut nofollow,
-      - zda jde o externí odkaz (na základě porovnání domén),
-      - u externích odkazů se pokusí zjistit status kód pomocí HEAD požadavku.
     
-    Dále odstraní fragment (kotvu) z URL, aby se např. 
-    https://domena.cz/stranka#obsah zpracovalo jako https://domena.cz/stranka.
-    """
+"""
+Ze zpracované stránky získá všechny odkazy a ke každému uloží:
+- zda je odkaz zapsán jako absolutní či relativní,
+- zda se má otevírat v novém okně (target="_blank"),
+- použitý protokol (http/https),
+- zda obsahuje atribut nofollow,
+- zda jde o externí odkaz (na základě porovnání domén),
+- u externích odkazů se pokusí zjistit status kód pomocí HEAD požadavku.
+
+Dále odstraní fragment (kotvu) z URL, aby se např. 
+https://domena.cz/stranka#obsah zpracovalo jako https://domena.cz/stranka.
+"""
+def process_links(soup, current_url, base_domain):
     page_links = []
     for a_tag in soup.find_all("a"):
         href = a_tag.get("href")
@@ -148,12 +149,12 @@ def process_links(soup, current_url, base_domain):
             
     return page_links
 
+"""
+Prochází webovou stránku (a její interní odkazy) rekurzivně.
+- Používá frontu (pages_to_visit) a množinu visited_pages.
+- Po každých 'progress_interval' stránkách uloží aktuální stav do JSON.
+"""
 def crawl(start_url, progress_interval=10):
-    """
-    Prochází webovou stránku (a její interní odkazy) rekurzivně.
-      - Používá frontu (pages_to_visit) a množinu visited_pages.
-      - Po každých 'progress_interval' stránkách uloží aktuální stav do JSON.
-    """
     parsed_start = urlparse(start_url)
     base_domain = parsed_start.netloc  # interní odkazy budou mít stejnou doménu
     visited_pages = set()
