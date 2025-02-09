@@ -1,10 +1,13 @@
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse, urlunparse
+from colorama import Fore, Style, init
 import csv
 import json
 import sys
 import time  # Importujeme modul time pro měření doby
+
+init(autoreset=True)
 
 # Vytvoříme session a nastavíme reálný User-Agent
 session = requests.Session()
@@ -29,7 +32,7 @@ def get_response(url):
         r = session.get(url, timeout=10)
         return r
     except Exception as e:
-        print(f"Chyba při stahování {url}: {e}")
+        print(f"{Fore.RED}Chyba při stahování {url}: {e}{Style.RESET_ALL}")
         return None
 
 # Pomocí HEAD požadavku zjistí status kód odkazu.
@@ -39,7 +42,7 @@ def get_head_response(url):
         r = session.head(url, timeout=10, allow_redirects=False)
         return r
     except Exception as e:
-        print(f"Chyba při HEAD požadavku na {url}: {e}")
+        print(f"{Fore.RED}Chyba při HEAD požadavku na {url}: {e}{Style.RESET_ALL}")
         return None
 
 # Uloží průběžný stav do JSON souboru.
@@ -120,6 +123,7 @@ def process_links(soup, current_url, base_domain):
             head_resp = get_head_response(absolute_url)
             if head_resp:
                 status_code = head_resp.status_code
+                print(f"   Testuji externí odkaz {absolute_url} a vrátil {status_code}")
         
         # Sestavíme slovník s informacemi o odkazu
         link_detail = {
@@ -144,6 +148,10 @@ def process_links(soup, current_url, base_domain):
                 "status_code": status_code,
                 "pages": set([current_url]),
             }
+            if external == True:
+                print(f"   Nalezen nový externí odkaz: {Style.DIM}{Fore.GREEN}{absolute_url}{Style.RESET_ALL}")            
+            else:
+                print(f"   Nalezen nový interní odkaz: {Fore.GREEN}{absolute_url}{Style.RESET_ALL}")            
         else:
             links_data[absolute_url]["pages"].add(current_url)
             
@@ -165,7 +173,7 @@ def crawl(start_url, progress_interval=10):
         current_page = pages_to_visit.pop(0)
         if current_page in visited_pages:
             continue
-        print(f"Zpracovávám stránku: {current_page}")
+        print(f"Zpracovávám stránku: {Fore.GREEN}{current_page}{Style.RESET_ALL}")
         start_time = time.time()  # start měření doby
         response = get_response(current_page)
         if response is None:
@@ -177,7 +185,7 @@ def crawl(start_url, progress_interval=10):
             continue
         status = response.status_code
         if status != 200:
-            print(f"Stránka {current_page} vrátila status {status}")
+            print(f"Stránka {current_page} vrátila status {Fore.RED}{status}{Style.RESET_ALL}")
             pages_data[current_page] = {
                 "status_code": status,
                 "links": []
@@ -212,8 +220,8 @@ def crawl(start_url, progress_interval=10):
             save_progress(visited_pages, pages_data, links_data)
     return visited_pages
 
+# Vytvoří dva CSV reporty: jeden pro stránky a druhý pro odkazy.
 def write_csv_reports(base_domain):
-    """Vytvoří dva CSV reporty: jeden pro stránky a druhý pro odkazy."""
     with open(f"{base_domain}_stranky.csv", "w", newline="", encoding="utf-8") as csvfile:
         fieldnames = ["page_url", "status_code", "links"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -225,7 +233,7 @@ def write_csv_reports(base_domain):
                 "status_code": data["status_code"],
                 "links": links_json
             })
-    print(f"CSV report pro stránky uložen do {base_domain}_stranky.csv")
+    print(f"{Fore.YELLOW}CSV report pro stránky uložen do {base_domain}_stranky.csv{Style.RESET_ALL}")
     
     with open(f"{base_domain}_odkazy.csv", "w", newline="", encoding="utf-8") as csvfile:
         fieldnames = ["link_url", "is_absolute", "opens_new_window", "scheme", "nofollow", "external", "status_code", "page_count"]
@@ -242,7 +250,7 @@ def write_csv_reports(base_domain):
                 "status_code": data["status_code"],
                 "page_count": len(data["pages"]) if "pages" in data else 0
             })
-    print(f"CSV report pro odkazy uložen do {base_domain}_odkazy.csv")
+    print(f"{Fore.YELLOW}CSV report pro odkazy uložen do {base_domain}_odkazy.csv{Style.RESET_ALL}")
 
 def main():
     user_url = input("Zadejte URL: ").strip()
