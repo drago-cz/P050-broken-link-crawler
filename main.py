@@ -117,13 +117,17 @@ def process_links(soup, current_url, base_domain):
         # Rozhodneme, zda je odkaz interní či externí
         external = (parsed_href.netloc and (parsed_href.netloc != base_domain))
         
-        # U externích odkazů se pokusíme zjistit status kód pomocí HEAD požadavku
         status_code = None
         if external:
-            head_resp = get_head_response(absolute_url)
-            if head_resp:
-                status_code = head_resp.status_code
-                print(f"   Testuji externí odkaz {absolute_url} a vrátil {status_code}")
+            # Pokud jsme již tento externí odkaz testovali, použijeme výsledek z cache.
+            if absolute_url in links_data and links_data[absolute_url].get("status_code") is not None:
+                status_code = links_data[absolute_url]["status_code"]
+                print(f"   {Style.DIM}Nalezen externí odkaz: {Fore.GREEN}{absolute_url} - již jsme procházeli.{Style.RESET_ALL}")
+            else:
+                head_resp = get_head_response(absolute_url)
+                if head_resp:
+                    status_code = head_resp.status_code
+                    print(f"   Nalezen nový externí odkaz: {Style.DIM}{Fore.GREEN}{absolute_url}{Style.RESET_ALL} a vrátil {status_code}")
         
         # Sestavíme slovník s informacemi o odkazu
         link_detail = {
@@ -148,14 +152,15 @@ def process_links(soup, current_url, base_domain):
                 "status_code": status_code,
                 "pages": set([current_url]),
             }
-            if external == True:
-                print(f"   Nalezen nový externí odkaz: {Style.DIM}{Fore.GREEN}{absolute_url}{Style.RESET_ALL}")            
+            if external:
+                pass
             else:
                 print(f"   Nalezen nový interní odkaz: {Fore.GREEN}{absolute_url}{Style.RESET_ALL}")            
         else:
             links_data[absolute_url]["pages"].add(current_url)
             
     return page_links
+
 
 """
 Prochází webovou stránku (a její interní odkazy) rekurzivně.
