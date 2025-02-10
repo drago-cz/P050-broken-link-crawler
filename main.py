@@ -1,11 +1,12 @@
 import requests
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlparse, urlunparse
-from colorama import Fore, Style, init
 import csv
 import json
 import sys
 import time  # Importujeme modul time pro měření doby
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin, urlparse, urlunparse
+from colorama import Fore, Style, init
+from types import SimpleNamespace
 
 init(autoreset=True)
 
@@ -31,9 +32,14 @@ def get_response(url):
     try:
         r = session.get(url, timeout=10)
         return r
+    except requests.exceptions.Timeout:
+        print(f"{Fore.RED}Timeout při stahování {url}{Style.RESET_ALL}")
+        # Vrátíme "dummy" objekt s status_code nastaveným na "timeout" a prázdným textem
+        return SimpleNamespace(status_code="timeout", text="")
     except Exception as e:
         print(f"{Fore.RED}Chyba při stahování {url}: {e}{Style.RESET_ALL}")
-        return None
+        # Vrátíme "dummy" objekt s status_code nastaveným na "error" a prázdným textem
+        return SimpleNamespace(status_code="error", text="")
 
 # Pomocí HEAD požadavku zjistí status kód odkazu.
 # Nechceme redirekty, potřebujeme vědět že je odkaz správně
@@ -41,9 +47,14 @@ def get_head_response(url):
     try:
         r = session.head(url, timeout=10, allow_redirects=False)
         return r
+    except requests.exceptions.Timeout:
+        print(f"{Fore.RED}Timeout při HEAD požadavku na {url}{Style.RESET_ALL}")
+        # Vrátíme objekt s atributem status_code nastaveným na "timeout"
+        return SimpleNamespace(status_code="timeout")
     except Exception as e:
         print(f"{Fore.RED}Chyba při HEAD požadavku na {url}: {e}{Style.RESET_ALL}")
-        return None
+        # Vrátíme objekt s atributem status_code nastaveným na "error"
+        return SimpleNamespace(status_code="error")
 
 # Uloží průběžný stav do JSON souboru.
 def save_progress(visited_pages, pages_data, links_data, filename="progress.json"):
