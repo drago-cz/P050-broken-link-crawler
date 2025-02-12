@@ -17,8 +17,16 @@ Repozitář naleznete na GitHubu: [Broken Link Crawler](https://github.com/drago
 - **Odstranění fragmentů:** Fragmenty (kotvy) v URL jsou odstraněny, aby nedocházelo k duplicitnímu zpracování (např. `example.com/stranka#sekce` se zpracovává jako `example.com/stranka`).
 - **Ukládání průběhu:** Průběžný stav procházení je periodicky ukládán do JSON souboru, což umožňuje sledovat aktuální stav práce. Lze použít i jako zdroj dat pro další vizualizace.
 - **Generování reportů:** Po dokončení procházení jsou vytvořeny dva CSV reporty:
-  - Report o stránkách (se status kódy a seznamem odkazů).
-  - Report o odkazech (s detaily jednotlivých odkazů a počtem stránek, kde se daný odkaz vyskytuje).
+  - `<doména>_stranky.csv` – report o stránkách, kde **nyní pro každý nalezený odkaz je vytvořen samostatný řádek** se sloupci:
+    - `page_url` – URL stránky, na které se odkaz nachází,
+    - `link_url` – URL samotného odkazu,
+    - `is_absolute` – zda byl odkaz zapsán jako absolutní,
+    - `opens_new_window` – zda se odkaz otevírá v novém okně,
+    - `scheme` – použitý protokol (HTTP/HTTPS),
+    - `nofollow` – přítomnost atributu nofollow,
+    - `external` – zda je odkaz interní nebo externí,
+    - `status_code` – HTTP status kód odkazu.
+  - `<doména>_odkazy.csv` – report o odkazech s detaily jednotlivých odkazů a počtem stránek, kde se daný odkaz vyskytuje.
 
 ## Použité technologie a knihovny
 
@@ -61,7 +69,7 @@ Po spuštění budete vyzváni k zadání URL adresy, kterou chcete zkontrolovat
 - Analyzuje a shromažďuje data o odkazech na každé stránce.
 - Pravidelně ukládá průběžný stav do JSON souboru (např. `progress.json`).
 - Po dokončení vytvoří finální CSV reporty:
-  - `<doména>_stranky.csv` – report o stránkách.
+  - `<doména>_stranky.csv` – report o stránkách (nově generovaný s jedním řádkem na každý nalezený odkaz se sloupci `page_url`, `link_url`, `is_absolute`, `opens_new_window`, `scheme`, `nofollow`, `external`, `status_code`).
   - `<doména>_odkazy.csv` – report o odkazech.
 
 ## Plánovaná vylepšení aka To Dd List
@@ -71,16 +79,13 @@ Po spuštění budete vyzváni k zadání URL adresy, kterou chcete zkontrolovat
 - **Optimalizace:** Lepší zpracování chyb a další vylepšení výkonu.
 
 ## Poděkování
-Jedná se o víkendoví projekt, který bych takto rychle nedal bez AI pomocí **ChatGPT o3-mini-high**  (pomoc s prvotním kódem a vygenerováním dokumentace) a 
-**ChatGPT 4o** za pomoc s laděním, argumentace (ne)vhodného návrhu kódu a komentáři.
 
+Jedná se o víkendoví projekt, který bych takto rychle nedal bez AI pomocí **ChatGPT o3-mini-high** (pomoc s prvotním kódem a vygenerováním dokumentace) a **ChatGPT 4o** za pomoc s laděním, argumentací (ne)vhodného návrhu kódu a komentáři.
 
 ## Licence
 
-Tento projekt je uvolněn pod vlastním licenčním ujednáním, které umožňuje stažení a používání kódu ve své původní podobě. **Úprava, adaptace nebo redistribuce kódu bez výslovného povolení není dovolena.** Důvodem je, že projekt není kompletní a neprošel důsledným testování. Budoucí licence bude MIT. 
+Tento projekt je uvolněn pod vlastním licenčním ujednáním, které umožňuje stažení a používání kódu ve své původní podobě. **Úprava, adaptace nebo redistribuce kódu bez výslovného povolení není dovolena.** Důvodem je, že projekt není kompletní a neprošel důsledným testováním. Budoucí licence bude MIT.
 
 ## Disclaimer
 
-Software je poskytován "tak, jak je" bez jakékoli záruky. Používáte jej na vlastní riziko. Jelikož se jedná o beta verzi (hodně early :)), můžete narazit na chyby nebo neočekávané chování. 
-
-
+Software je poskytován "tak, jak je" bez jakékoli záruky. Používáte jej na vlastní riziko. Jelikož se jedná o beta verzi (hodně early :)), můžete narazit na chyby nebo neočekávané chování.

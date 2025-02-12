@@ -42,7 +42,7 @@ def get_response(url):
         return SimpleNamespace(status_code="error", text="")
 
 # Pomocí HEAD požadavku zjistí status kód odkazu.
-# Nechceme redirekty, potřebujeme vědět že je odkaz správně
+# Nechceme redirekty, potřebujeme vědět, že je odkaz správně.
 def get_head_response(url):
     try:
         r = session.head(url, timeout=10, allow_redirects=False)
@@ -238,19 +238,26 @@ def crawl(start_url, progress_interval=10):
 
 # Vytvoří dva CSV reporty: jeden pro stránky a druhý pro odkazy.
 def write_csv_reports(base_domain):
+    # Report pro stránky – nyní jeden řádek pro každý nalezený odkaz
     with open(f"{base_domain}_stranky.csv", "w", newline="", encoding="utf-8") as csvfile:
-        fieldnames = ["page_url", "status_code", "links"]
+        fieldnames = ["page_url", "link_url", "is_absolute", "opens_new_window", "scheme", "nofollow", "external", "status_code"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for page, data in pages_data.items():
-            links_json = json.dumps(data["links"], ensure_ascii=False)
-            writer.writerow({
-                "page_url": page,
-                "status_code": data["status_code"],
-                "links": links_json
-            })
+            for link in data["links"]:
+                writer.writerow({
+                    "page_url": page,
+                    "link_url": link.get("url"),
+                    "is_absolute": link.get("is_absolute"),
+                    "opens_new_window": link.get("opens_new_window"),
+                    "scheme": link.get("scheme"),
+                    "nofollow": link.get("nofollow"),
+                    "external": link.get("external"),
+                    "status_code": link.get("status_code")
+                })
     print(f"{Fore.YELLOW}CSV report pro stránky uložen do {base_domain}_stranky.csv{Style.RESET_ALL}")
     
+    # Report pro odkazy (nezměněno)
     with open(f"{base_domain}_odkazy.csv", "w", newline="", encoding="utf-8") as csvfile:
         fieldnames = ["link_url", "is_absolute", "opens_new_window", "scheme", "nofollow", "external", "status_code", "page_count"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
