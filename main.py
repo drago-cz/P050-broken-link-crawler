@@ -245,6 +245,19 @@ def write_csv_reports(base_domain):
         writer.writeheader()
         for page, data in pages_data.items():
             for link in data["links"]:
+                if not link["external"]:
+                    # Pokud jsme danou stránku již navštívili, získáme její GET status code
+                    if link["url"] in pages_data:
+                        link["status_code"] = pages_data[link["url"]]["status_code"]
+                        # Pro debugování
+                        # print (f"{Fore.GREEN}Stránka {link["url"]} již byla navštívena, status code: {link["status_code"]}{Style.RESET_ALL}")
+                    else:
+                        # Pokud stránka nebyla navštívena, můžeme zkusit HEAD požadavek
+                        head_resp = get_head_response(link["url"])
+                        if head_resp:
+                            link["status_code"] = head_resp.status_code
+                            # Pro debugování
+                            # print(f"{Fore.GREEN}Stránka {link["url"]} nebyla navštívena. Dodatečně pováleme HEAD, status code: {link["status_code"]}{Style.RESET_ALL}")
                 writer.writerow({
                     "page_url": page,
                     "link_url": link.get("url"),
@@ -255,6 +268,7 @@ def write_csv_reports(base_domain):
                     "external": link.get("external"),
                     "status_code": link.get("status_code")
                 })
+
     print(f"{Fore.YELLOW}CSV report pro stránky uložen do {base_domain}_stranky.csv{Style.RESET_ALL}")
     
     # Report pro odkazy (nezměněno)
