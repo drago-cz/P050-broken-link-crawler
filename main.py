@@ -3,12 +3,16 @@ import csv
 import json
 import sys
 import time  # Importujeme modul time pro měření doby
+import os
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse, urlunparse
 from colorama import Fore, Style, init
 from types import SimpleNamespace
 
 init(autoreset=True)
+
+# Seznam koncovek (malými písmeny) souborů, které nechceme procházet
+EXCLUDED_EXTENSIONS = {'.pdf', '.doc', '.docx', '.xls', '.xlsx'}
 
 # Vytvoříme session a nastavíme reálný User-Agent
 session = requests.Session()
@@ -100,7 +104,13 @@ def process_links(soup, current_url, base_domain):
         # Odstraníme fragment (kotvu)
         parsed = urlparse(absolute_url)
         absolute_url = urlunparse(parsed._replace(fragment=""))
-        
+
+        # parsed.path je cesta bez query a fragmentu, např. '/soubor.pdf'
+        ext = os.path.splitext(parsed.path)[1].lower()
+        if ext in EXCLUDED_EXTENSIONS:
+            # print(f"   Přeskočený souborový odkaz: {absolute_url}")
+            continue
+
         # Ověříme, zda URL používá podporované schéma (http/https)
         parsed_href = urlparse(absolute_url)
         if not parsed_href.scheme.startswith("http"):
