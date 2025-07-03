@@ -11,8 +11,12 @@ from types import SimpleNamespace
 
 init(autoreset=True)
 
+# Načteme konfiguraci z JSON souboru
+with open('config.json', 'r', encoding='utf-8') as f:
+    config = json.load(f)
+
 # Seznam koncovek (malými písmeny) souborů, které nechceme procházet
-EXCLUDED_EXTENSIONS = {'.pdf', '.doc', '.docx', '.xls', '.xlsx'}
+EXCLUDED_EXTENSIONS = set(config.get('excluded_extensions', []))
 
 # Vytvoříme session a nastavíme reálný User-Agent
 session = requests.Session()
